@@ -1,12 +1,17 @@
-import { fetchGithubStatsRaw, fetchPublicEvents } from "./github-client";
+import {
+  fetchGithubStatsRaw,
+  fetchPublicEvents,
+  fetchRepositoriesRaw,
+} from "./github-client";
 import {
   calculateActivityHeatmap,
   calculateLanguageStats,
   calculateStreaks,
   normalizeContributionDays,
+  toProjects,
   topRepos,
 } from "./stats";
-import type { GithubStats } from "./types";
+import type { GithubStats, Project } from "./types";
 
 export async function getGithubStats(username: string): Promise<GithubStats> {
   const [raw, events] = await Promise.all([
@@ -44,4 +49,12 @@ export async function getGithubStats(username: string): Promise<GithubStats> {
     },
     generatedAt: new Date().toISOString(),
   };
+}
+
+export async function getProjects(username: string): Promise<Project[]> {
+  const raw = await fetchRepositoriesRaw(username);
+  if (!raw.user) {
+    throw new Error(`No se encontró el usuario de GitHub "${username}"`);
+  }
+  return toProjects(raw.user.repositories.nodes);
 }

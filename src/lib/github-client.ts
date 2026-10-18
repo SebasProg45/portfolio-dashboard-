@@ -42,6 +42,41 @@ const STATS_QUERY = /* GraphQL */ `
           description
           stargazerCount
           pushedAt
+          isArchived
+          primaryLanguage {
+            name
+          }
+          languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
+            edges {
+              size
+              node {
+                name
+                color
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const REPOS_QUERY = /* GraphQL */ `
+  query UserRepos($login: String!) {
+    user(login: $login) {
+      repositories(
+        first: 100
+        ownerAffiliations: OWNER
+        isFork: false
+        orderBy: { field: PUSHED_AT, direction: DESC }
+      ) {
+        nodes {
+          name
+          url
+          description
+          stargazerCount
+          pushedAt
+          isArchived
           primaryLanguage {
             name
           }
@@ -71,9 +106,41 @@ export type GraphQLRepoNode = {
   description: string | null;
   stargazerCount: number;
   pushedAt: string;
+  isArchived: boolean;
   primaryLanguage: { name: string } | null;
   languages: { edges: GraphQLLanguageEdge[] };
 };
+
+export type ReposResponse = {
+  user: { repositories: { nodes: GraphQLRepoNode[] } } | null;
+};
+
+export async function fetchRepositoriesRaw(
+  username: string
+): Promise<ReposResponse> {
+  const res = await fetch(GITHUB_GRAPHQL_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `bearer ${getToken()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: REPOS_QUERY,
+      variables: { login: username },
+    }),
+    next: { revalidate: 3600 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`GitHub GraphQL API error: ${res.status} ${res.statusText}`);
+  }
+
+  const json = await res.json();
+  if (json.errors) {
+    throw new Error(`GitHub GraphQL errors: ${JSON.stringify(json.errors)}`);
+  }
+  return json.data as ReposResponse;
+}
 
 export type GraphQLContributionDay = {
   date: string;

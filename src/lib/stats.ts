@@ -3,7 +3,7 @@ import type {
   GraphQLRepoNode,
   PublicEvent,
 } from "./github-client";
-import type { ContributionDay, LanguageStat, RepoStat } from "./types";
+import type { ContributionDay, LanguageStat, Project, RepoStat } from "./types";
 
 export function normalizeContributionDays(
   weeks: { contributionDays: GraphQLContributionDay[] }[]
@@ -115,4 +115,34 @@ export function calculateActivityHeatmap(events: PublicEvent[]): {
   }
 
   return { hourly, weekday };
+}
+
+/**
+ * Turns a repo name into a display title: "asistencia-catequesis" ->
+ * "Asistencia Catequesis", trailing/leading hyphens dropped.
+ */
+export function formatRepoTitle(name: string): string {
+  return name
+    .replace(/^-+|-+$/g, "")
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * Maps every non-archived repo to a portfolio project card, most recently
+ * pushed first. No manual curation: a new repo shows up here automatically
+ * once it has a GitHub description set (otherwise the card just omits it).
+ */
+export function toProjects(repos: GraphQLRepoNode[]): Project[] {
+  return repos
+    .filter((repo) => !repo.isArchived)
+    .map((repo) => ({
+      title: formatRepoTitle(repo.name),
+      description: repo.description,
+      languages: repo.languages.edges.map((edge) => edge.node.name),
+      url: repo.url,
+      pushedAt: repo.pushedAt,
+    }));
 }

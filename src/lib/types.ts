@@ -20,6 +20,14 @@ export type RepoStat = {
   pushedAt: string;
 };
 
+export type Project = {
+  title: string;
+  description: string | null;
+  languages: string[];
+  url: string;
+  pushedAt: string;
+};
+
 export type GithubStats = {
   username: string;
   totalContributions: number;

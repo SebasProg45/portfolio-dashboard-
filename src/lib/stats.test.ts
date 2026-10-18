@@ -63,6 +63,7 @@ function repo(
     description: null,
     stargazerCount: stars,
     pushedAt: "2026-01-01T00:00:00Z",
+    isArchived: false,
     primaryLanguage: languages[0] ? { name: languages[0].name } : null,
     languages: {
       edges: languages.map((l) => ({
